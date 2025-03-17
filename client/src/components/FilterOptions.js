@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const FilterOptions = ({ onFilterChange, apiUrl }) => {
+const FilterOptions = ({ onFilterChange, apiUrl, currentFilters }) => {
   const [categories, setCategories] = useState([]);
   const [jobTypes, setJobTypes] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -9,20 +9,37 @@ const FilterOptions = ({ onFilterChange, apiUrl }) => {
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(false);
 
+  // Initialize from current filters if provided
+  useEffect(() => {
+    if (currentFilters) {
+      setSelectedCategories(currentFilters.categories || []);
+      setSelectedJobTypes(currentFilters.jobTypes || []);
+    }
+  }, [currentFilters]);
+
   // Fetch available categories and job types from the API
   useEffect(() => {
     const fetchFilters = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${apiUrl}/api/categories`);
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch filter options');
+        // Fetch categories
+        const categoriesResponse = await fetch(`${apiUrl}/api/categories`);
+        if (!categoriesResponse.ok) {
+          throw new Error('Failed to fetch categories');
         }
+        const categoriesData = await categoriesResponse.json();
         
-        const data = await response.json();
-        setCategories(data.categories || []);
-        setJobTypes(data.job_types || []);
+        // Fetch job types
+        const jobTypesResponse = await fetch(`${apiUrl}/api/job_types`);
+        if (!jobTypesResponse.ok) {
+          throw new Error('Failed to fetch job types');
+        }
+        const jobTypesData = await jobTypesResponse.json();
+        
+        // Update state with fetched data
+        setCategories(categoriesData || []);
+        setJobTypes(jobTypesData || []);
         setError(null);
       } catch (err) {
         console.error('Error fetching filters:', err);
@@ -95,6 +112,22 @@ const FilterOptions = ({ onFilterChange, apiUrl }) => {
     ).join(' ');
   };
   
+  // Group categories for better UI organization
+  const groupedCategories = () => {
+    const groups = {};
+    
+    // Group by first word (e.g., "IT Jobs", "Engineering Jobs")
+    categories.forEach(category => {
+      const group = category.split(' ')[0];
+      if (!groups[group]) {
+        groups[group] = [];
+      }
+      groups[group].push(category);
+    });
+    
+    return Object.values(groups);
+  };
+  
   return (
     <div className="filter-options">
       <div className="filter-header" onClick={() => setExpanded(!expanded)}>
@@ -130,7 +163,7 @@ const FilterOptions = ({ onFilterChange, apiUrl }) => {
                           checked={selectedCategories.includes(category)}
                           onChange={() => handleCategoryChange(category)}
                         />
-                        {category}
+                        {category.replace(' Jobs', '')}
                       </label>
                     </div>
                   ))}
@@ -171,7 +204,7 @@ const FilterOptions = ({ onFilterChange, apiUrl }) => {
           <div className="filter-tags">
             {selectedCategories.map(category => (
               <span key={category} className="filter-tag">
-                {category}
+                {category.replace(' Jobs', '')}
                 <button onClick={() => handleCategoryChange(category)}>×</button>
               </span>
             ))}

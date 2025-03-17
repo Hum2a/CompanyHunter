@@ -6,7 +6,7 @@ const containerStyle = {
   height: '400px'
 };
 
-const MapComponent = ({ center, radius, setCenter, setRadius }) => {
+const MapComponent = ({ center, radius, setCenter, markers = [] }) => {
   const mapRef = useRef(null);
   const circleRef = useRef(null);
   const [map, setMap] = useState(null);
@@ -30,13 +30,6 @@ const MapComponent = ({ center, radius, setCenter, setRadius }) => {
     circleRef.current = circle;
   }, []);
 
-  // Update radius when the circle is dragged
-  const onRadiusChanged = React.useCallback(() => {
-    if (circleRef.current) {
-      setRadius(circleRef.current.getRadius() / 1000); // Convert meters to kilometers
-    }
-  }, [setRadius]);
-
   // Update center when the map is clicked
   const onMapClick = React.useCallback((e) => {
     setCenter({
@@ -59,17 +52,33 @@ const MapComponent = ({ center, radius, setCenter, setRadius }) => {
         center={center}
         radius={radius * 1000} // Convert km to meters
         onLoad={onCircleLoad}
-        onRadiusChanged={onRadiusChanged}
         options={{
           fillColor: 'rgba(66, 133, 244, 0.2)',
           fillOpacity: 0.35,
           strokeColor: '#4285F4',
           strokeOpacity: 0.8,
           strokeWeight: 2,
-          editable: true,
+          editable: false,
           draggable: false
         }}
       />
+      
+      {/* Render job markers */}
+      {markers.map((job, index) => (
+        job.latitude && job.longitude ? (
+          <Marker 
+            key={job.id || `job-${index}`}
+            position={{
+              lat: parseFloat(job.latitude),
+              lng: parseFloat(job.longitude)
+            }}
+            icon={{
+              url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+            }}
+            title={job.title}
+          />
+        ) : null
+      ))}
     </GoogleMap>
   ) : <div>Loading...</div>;
 };

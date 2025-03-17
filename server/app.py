@@ -13,7 +13,6 @@ from googleapiclient.discovery import build
 from api_connectors import (
     AdzunaConnector, 
     ReedConnector, 
-    GitHubJobsConnector, 
     GoogleJobsConnector,
     IndeedConnector,
     JobAggregator
@@ -84,10 +83,6 @@ if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_PROJECT_ID:
     ))
 else:
     print("Google OAuth credentials or project ID not found, skipping connector")
-
-# GitHub Jobs doesn't need API keys
-print("Adding GitHub Jobs connector")
-job_aggregator.add_connector(GitHubJobsConnector())
 
 # Get combined categories and job types
 ALL_CATEGORIES = job_aggregator.get_categories()
