@@ -6,6 +6,8 @@ import math
 import json
 import asyncio
 from dotenv import load_dotenv
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 
 # Import API connectors
 from api_connectors import (
@@ -13,6 +15,7 @@ from api_connectors import (
     ReedConnector, 
     GitHubJobsConnector, 
     GoogleJobsConnector,
+    IndeedConnector,
     JobAggregator
 )
 
@@ -27,6 +30,7 @@ ADZUNA_APP_ID = os.getenv('ADZUNA_APP_ID')
 ADZUNA_API_KEY = os.getenv('ADZUNA_API_KEY')
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
 REED_API_KEY = os.getenv('REED_API_KEY')
+INDEED_PUBLISHER_ID = os.getenv('INDEED_PUBLISHER_ID')
 
 # Google OAuth credentials
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
@@ -42,15 +46,33 @@ job_aggregator = JobAggregator()
 # Add connectors if API keys are available
 if ADZUNA_APP_ID and ADZUNA_API_KEY:
     print("Adding Adzuna connector")
-    job_aggregator.add_connector(AdzunaConnector(ADZUNA_APP_ID, ADZUNA_API_KEY))
+    try:
+        job_aggregator.add_connector(AdzunaConnector(ADZUNA_APP_ID, ADZUNA_API_KEY))
+        print(f"Adzuna credentials: app_id={ADZUNA_APP_ID[:5]}... app_key={ADZUNA_API_KEY[:5]}...")
+    except Exception as e:
+        print(f"Error initializing Adzuna connector: {str(e)}")
 else:
     print("Adzuna API keys not found, skipping connector")
 
-if REED_API_KEY:
+if REED_API_KEY and REED_API_KEY != "your_reed_api_key_here":
     print("Adding Reed connector")
-    job_aggregator.add_connector(ReedConnector(REED_API_KEY))
+    try:
+        job_aggregator.add_connector(ReedConnector(REED_API_KEY))
+    except Exception as e:
+        print(f"Error initializing Reed connector: {str(e)}")
 else:
-    print("Reed API key not found, skipping connector")
+    print("Reed API key not found or is a placeholder, skipping connector")
+
+# Add Indeed connector if Publisher ID is available
+if INDEED_PUBLISHER_ID and INDEED_PUBLISHER_ID != "your_indeed_publisher_id_here":
+    print("Adding Indeed connector")
+    try:
+        job_aggregator.add_connector(IndeedConnector(INDEED_PUBLISHER_ID))
+        print(f"Indeed Publisher ID: {INDEED_PUBLISHER_ID[:5]}...")
+    except Exception as e:
+        print(f"Error initializing Indeed connector: {str(e)}")
+else:
+    print("Indeed Publisher ID not found or is a placeholder, skipping connector")
 
 # Google Jobs API requires OAuth credentials and project ID
 if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_PROJECT_ID:
@@ -72,34 +94,31 @@ ALL_CATEGORIES = job_aggregator.get_categories()
 ALL_JOB_TYPES = job_aggregator.get_job_types()
 
 def calculate_distance(lat1, lon1, lat2, lon2):
-    """Calculate distance between two points using Haversine formula"""
-    # Earth radius in kilometers
-    R = 6371.0
+    """Calculate distance between two points in kilometers"""
+    # Convert decimal degrees to radians
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
     
-    lat1_rad = math.radians(lat1)
-    lon1_rad = math.radians(lon1)
-    lat2_rad = math.radians(lat2)
-    lon2_rad = math.radians(lon2)
+    # Haversine formula
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    r = 6371  # Radius of earth in kilometers
     
-    dlon = lon2_rad - lon1_rad
-    dlat = lat2_rad - lat1_rad
-    
-    a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    
-    distance = R * c
-    return distance
+    return c * r
 
 @app.route('/api/categories', methods=['GET'])
 def get_categories():
-    """Return available job categories and types"""
-    return jsonify({
-        'categories': ALL_CATEGORIES,
-        'job_types': ALL_JOB_TYPES
-    })
+    """Get all available job categories"""
+    return jsonify(ALL_CATEGORIES)
+
+@app.route('/api/job_types', methods=['GET'])
+def get_job_types():
+    """Get all available job types"""
+    return jsonify(ALL_JOB_TYPES)
 
 @app.route('/api/jobs', methods=['GET'])
-async def get_jobs():
+def get_jobs():
     """Get jobs within radius of location using multiple APIs"""
     # Get query parameters
     location = request.args.get('location', '')
@@ -136,13 +155,18 @@ async def get_jobs():
         formatted_address = geocode_data['results'][0].get('formatted_address', '')
         print(f"Formatted address: {formatted_address}")
         
-        # Call the aggregator to search across all APIs
-        all_jobs = await job_aggregator.search_jobs(
-            location=formatted_address,
-            radius=radius,
-            categories=categories if categories else None,
-            job_types=job_types if job_types else None
+        # Create the event loop and run the aggregator search
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        all_jobs = loop.run_until_complete(
+            job_aggregator.search_jobs(
+                location=formatted_address,
+                radius=radius,
+                categories=categories if categories else None,
+                job_types=job_types if job_types else None
+            )
         )
+        loop.close()
         
         # Post-process to filter out blacklisted companies and apply distance filter
         filtered_jobs = []
@@ -175,9 +199,8 @@ async def get_jobs():
                 continue
                 
             # Get additional metadata from Google Maps if needed
-            if not job.get('company_metadata') or all(
-                value == 'N/A' for value in job.get('company_metadata', {}).values()
-            ):
+            if (not job.get('company_metadata') or 
+                all(value == 'N/A' for value in job.get('company_metadata', {}).values())):
                 try:
                     if company_name:
                         print(f"Getting additional metadata for company: {company_name}")
@@ -229,7 +252,11 @@ async def get_jobs():
         
         return jsonify({
             'total': len(filtered_jobs),
-            'results': filtered_jobs
+            'results': filtered_jobs,
+            'coordinates': {
+                'latitude': lat,
+                'longitude': lng
+            }
         })
         
     except Exception as e:
@@ -238,16 +265,13 @@ async def get_jobs():
 
 @app.route('/api/save', methods=['POST'])
 def save_company():
-    """Save company data"""
-    company_data = request.json
-    
-    if not company_data:
-        return jsonify({'error': 'No data provided'}), 400
-    
-    # In a real app, you would save this to a database
-    # For now, we'll just return success
-    return jsonify({'success': True, 'message': 'Company saved'})
+    """Save a company to favorites"""
+    try:
+        data = request.json
+        # TODO: Implement saving to database
+        return jsonify({'success': True, 'message': 'Company saved successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Flask doesn't support asyncio by default, so we need a special run method
-    app.run(debug=True, threaded=True)
+    app.run(debug=True)
