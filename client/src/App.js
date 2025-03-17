@@ -3,6 +3,7 @@ import './App.css';
 import MapComponent from './components/MapComponent';
 import SearchForm from './components/SearchForm';
 import CompanyResults from './components/CompanyResults';
+import FilterOptions from './components/FilterOptions';
 
 // Get API URL from environment variables or use default
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -13,20 +14,39 @@ function App() {
   const [results, setResults] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState({ categories: [], jobTypes: [] });
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+    // If we already have results, don't trigger a new search automatically
+    // The user will need to click search again to apply the filters
+  };
 
   const handleSearch = async (searchParams) => {
     try {
       setError(null);
       setLoading(true);
       
+      // Build URL parameters including filters
       const params = new URLSearchParams({
         location: searchParams.location,
         radius: searchParams.radius
       });
       
-      console.log(`Searching for jobs at: ${API_URL}/api/jobs?${params.toString()}`);
+      // Add category filters
+      filters.categories.forEach(category => {
+        params.append('category', category);
+      });
       
-      const response = await fetch(`${API_URL}/api/jobs?${params.toString()}`);
+      // Add job type filters
+      filters.jobTypes.forEach(jobType => {
+        params.append('job_type', jobType);
+      });
+      
+      const searchUrl = `${API_URL}/api/jobs?${params.toString()}`;
+      console.log(`Searching for jobs at: ${searchUrl}`);
+      
+      const response = await fetch(searchUrl);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -97,6 +117,11 @@ function App() {
               radius={radius}
               setRadius={setRadius}
               isLoading={loading}
+            />
+            
+            <FilterOptions 
+              onFilterChange={handleFilterChange} 
+              apiUrl={API_URL}
             />
           </div>
         </div>

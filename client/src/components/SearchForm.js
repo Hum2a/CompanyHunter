@@ -19,6 +19,7 @@ const SearchForm = ({ onSearch, center, radius, setRadius, isLoading }) => {
 
   return (
     <div className="search-form">
+      <h3>Search Jobs</h3>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label htmlFor="location">Location (or click on map):</label>
@@ -34,7 +35,7 @@ const SearchForm = ({ onSearch, center, radius, setRadius, isLoading }) => {
         </div>
         
         <div className="form-group">
-          <label htmlFor="radius">Radius (km): {searchRadius} km</label>
+          <label htmlFor="radius">Search Radius: {searchRadius} km</label>
           <input
             type="range"
             id="radius"
@@ -54,6 +55,10 @@ const SearchForm = ({ onSearch, center, radius, setRadius, isLoading }) => {
         <button type="submit" className="btn btn-primary" disabled={isLoading}>
           {isLoading ? 'Searching...' : 'Search Jobs'}
         </button>
+        
+        <p className="search-help-text">
+          Use the filters below to narrow down your results
+        </p>
       </form>
     </div>
   );

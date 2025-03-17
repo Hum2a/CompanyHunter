@@ -3,7 +3,18 @@ from flask_cors import CORS
 import requests
 import os
 import math
+import json
+import asyncio
 from dotenv import load_dotenv
+
+# Import API connectors
+from api_connectors import (
+    AdzunaConnector, 
+    ReedConnector, 
+    GitHubJobsConnector, 
+    GoogleJobsConnector,
+    JobAggregator
+)
 
 # Load environment variables
 load_dotenv()
@@ -15,9 +26,43 @@ CORS(app)  # Enable CORS for all routes
 ADZUNA_APP_ID = os.getenv('ADZUNA_APP_ID')
 ADZUNA_API_KEY = os.getenv('ADZUNA_API_KEY')
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
+REED_API_KEY = os.getenv('REED_API_KEY')
+GOOGLE_JOBS_API_KEY = os.getenv('GOOGLE_JOBS_API_KEY')
+GOOGLE_JOBS_PROJECT_ID = os.getenv('GOOGLE_JOBS_PROJECT_ID')
 
 # Blacklist of companies to filter out
 COMPANY_BLACKLIST = []
+
+# Initialize job aggregator with all connectors
+job_aggregator = JobAggregator()
+
+# Add connectors if API keys are available
+if ADZUNA_APP_ID and ADZUNA_API_KEY:
+    print("Adding Adzuna connector")
+    job_aggregator.add_connector(AdzunaConnector(ADZUNA_APP_ID, ADZUNA_API_KEY))
+else:
+    print("Adzuna API keys not found, skipping connector")
+
+if REED_API_KEY:
+    print("Adding Reed connector")
+    job_aggregator.add_connector(ReedConnector(REED_API_KEY))
+else:
+    print("Reed API key not found, skipping connector")
+
+# Google Jobs API requires API key and project ID
+if GOOGLE_JOBS_API_KEY and GOOGLE_JOBS_PROJECT_ID:
+    print("Adding Google Jobs connector")
+    job_aggregator.add_connector(GoogleJobsConnector(GOOGLE_JOBS_API_KEY, GOOGLE_JOBS_PROJECT_ID))
+else:
+    print("Google Jobs API key or project ID not found, skipping connector")
+
+# GitHub Jobs doesn't need API keys
+print("Adding GitHub Jobs connector")
+job_aggregator.add_connector(GitHubJobsConnector())
+
+# Get combined categories and job types
+ALL_CATEGORIES = job_aggregator.get_categories()
+ALL_JOB_TYPES = job_aggregator.get_job_types()
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     """Calculate distance between two points using Haversine formula"""
@@ -38,12 +83,27 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     distance = R * c
     return distance
 
+@app.route('/api/categories', methods=['GET'])
+def get_categories():
+    """Return available job categories and types"""
+    return jsonify({
+        'categories': ALL_CATEGORIES,
+        'job_types': ALL_JOB_TYPES
+    })
+
 @app.route('/api/jobs', methods=['GET'])
-def get_jobs():
-    """Get jobs within radius of location"""
+async def get_jobs():
+    """Get jobs within radius of location using multiple APIs"""
     # Get query parameters
     location = request.args.get('location', '')
     radius = float(request.args.get('radius', 10))  # default 10km
+    categories = request.args.getlist('category')  # Multiple categories can be selected
+    job_types = request.args.getlist('job_type')   # Multiple job types can be selected
+    
+    print(f"Requested location: {location}")
+    print(f"Requested radius: {radius}")
+    print(f"Requested categories: {categories}")
+    print(f"Requested job types: {job_types}")
     
     if not location:
         return jsonify({'error': 'Location is required'}), 400
@@ -51,8 +111,11 @@ def get_jobs():
     try:
         # Get coordinates for location using Google Maps API
         geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={location}&key={GOOGLE_MAPS_API_KEY}"
+        print(f"Geocoding URL: {geocode_url}")
         geocode_response = requests.get(geocode_url)
         geocode_data = geocode_response.json()
+        
+        print(f"Geocode response status: {geocode_data['status']}")
         
         if geocode_data['status'] != 'OK':
             return jsonify({'error': 'Could not geocode location'}), 400
@@ -64,116 +127,98 @@ def get_jobs():
         
         # Get formatted address for the search area
         formatted_address = geocode_data['results'][0].get('formatted_address', '')
+        print(f"Formatted address: {formatted_address}")
         
-        # Extract country, city, region from formatted_address for better Adzuna search
-        address_parts = formatted_address.split(',')
+        # Call the aggregator to search across all APIs
+        all_jobs = await job_aggregator.search_jobs(
+            location=formatted_address,
+            radius=radius,
+            categories=categories if categories else None,
+            job_types=job_types if job_types else None
+        )
         
-        # Determine the most relevant location parts for search
-        search_location = address_parts[0].strip() if address_parts else location
-        
-        # Use a larger search radius for Adzuna to ensure we get results
-        api_radius = int(radius * 2)  # Double the radius for the API search
-        if api_radius < 10:
-            api_radius = 10  # Minimum 10km for API search
-            
-        # Get jobs from Adzuna API with broader search
-        # Don't use the what_and parameter which is too restrictive
-        # Instead use where parameter and distance search from the API
-        adzuna_url = f"https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id={ADZUNA_APP_ID}&app_key={ADZUNA_API_KEY}&results_per_page=100&where={search_location}&distance={api_radius}"
-        
-        print(f"Adzuna API URL: {adzuna_url}")  # Debug log
-        
-        adzuna_response = requests.get(adzuna_url)
-        adzuna_data = adzuna_response.json()
-        
-        print(f"Adzuna API response status: {adzuna_response.status_code}")  # Debug log
-        print(f"Total results from Adzuna: {adzuna_data.get('count', 0)}")  # Debug log
-        
-        # If no results in first page, try a more generic search
-        if not adzuna_data.get('results'):
-            # Try a more generic search without specific location
-            adzuna_url = f"https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id={ADZUNA_APP_ID}&app_key={ADZUNA_API_KEY}&results_per_page=100"
-            adzuna_response = requests.get(adzuna_url)
-            adzuna_data = adzuna_response.json()
-            print(f"Fallback search - total results: {adzuna_data.get('count', 0)}")  # Debug log
-        
-        # Filter jobs by distance and blacklist
+        # Post-process to filter out blacklisted companies and apply distance filter
         filtered_jobs = []
-        for job in adzuna_data.get('results', []):
+        for job in all_jobs:
             # Skip if company is in blacklist
-            company = job.get('company', {}).get('display_name', '')
-            if company in COMPANY_BLACKLIST:
+            company_name = job.get('company', {}).get('display_name', '')
+            if company_name in COMPANY_BLACKLIST:
+                print(f"Company {company_name} is blacklisted, skipping")
                 continue
             
-            # Handle jobs without location data
+            # Handle jobs without location data or distance calculation
             job_lat = job.get('latitude')
             job_lng = job.get('longitude')
             
-            # If the job doesn't have coordinates, use the search coordinates
-            # This allows us to include jobs without precise coordinates
-            if not job_lat or not job_lng:
+            # If no coordinates or distance, add it with distance 0
+            if not job_lat or not job_lng or 'distance' not in job:
                 job_lat = lat
                 job_lng = lng
-                distance = 0  # Assume it's at the center of search
-            else:
-                # Calculate distance
+                job['distance'] = 0
+                job['latitude'] = job_lat
+                job['longitude'] = job_lng
+            
+            # Override distance calculation if needed (some APIs provide this)
+            if 'distance' not in job:
                 distance = calculate_distance(lat, lng, job_lat, job_lng)
+                job['distance'] = distance
             
             # Skip if outside radius
-            if distance > radius:
+            if job['distance'] > radius:
                 continue
-            
-            # Get company metadata from Google Maps
-            try:
-                company_name = job.get('company', {}).get('display_name', '')
-                if company_name:
-                    places_url = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={company_name}&inputtype=textquery&fields=formatted_address,name,rating,opening_hours,geometry,place_id&key={GOOGLE_MAPS_API_KEY}"
-                    places_response = requests.get(places_url)
-                    places_data = places_response.json()
-                    
-                    if places_data['status'] == 'OK' and places_data.get('candidates'):
-                        place_id = places_data['candidates'][0]['place_id']
+                
+            # Get additional metadata from Google Maps if needed
+            if not job.get('company_metadata') or all(
+                value == 'N/A' for value in job.get('company_metadata', {}).values()
+            ):
+                try:
+                    if company_name:
+                        print(f"Getting additional metadata for company: {company_name}")
+                        # Add location context to improve search accuracy
+                        search_query = f"{company_name} {formatted_address}"
+                        places_url = f"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={search_query}&inputtype=textquery&fields=formatted_address,name,rating,opening_hours,geometry,place_id&key={GOOGLE_MAPS_API_KEY}"
+                        places_response = requests.get(places_url)
+                        places_data = places_response.json()
                         
-                        # Get place details
-                        details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,url&key={GOOGLE_MAPS_API_KEY}"
-                        details_response = requests.get(details_url)
-                        details_data = details_response.json()
-                        
-                        if details_data['status'] == 'OK':
-                            details = details_data['result']
+                        if places_data['status'] == 'OK' and places_data.get('candidates'):
+                            place_id = places_data['candidates'][0]['place_id']
                             
-                            # Add metadata to job
-                            job['company_metadata'] = {
-                                'address': details.get('formatted_address', 'N/A'),
-                                'phone': details.get('formatted_phone_number', 'N/A'),
-                                'website': details.get('website', 'N/A'),
-                                'maps_url': details.get('url', 'N/A')
-                            }
-                    else:
-                        # If no place found, set default metadata
-                        job['company_metadata'] = {
-                            'address': 'N/A',
-                            'phone': 'N/A',
-                            'website': 'N/A',
-                            'maps_url': 'N/A'
-                        }
-            except Exception as e:
-                print(f"Error getting company metadata: {str(e)}")
-                # If company metadata retrieval fails, continue with N/A values
-                job['company_metadata'] = {
-                    'address': 'N/A',
-                    'phone': 'N/A',
-                    'website': 'N/A',
-                    'maps_url': 'N/A'
-                }
-            
-            # Add distance to job
-            job['distance'] = distance
+                            # Get place details
+                            details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_address,formatted_phone_number,website,url&key={GOOGLE_MAPS_API_KEY}"
+                            details_response = requests.get(details_url)
+                            details_data = details_response.json()
+                            
+                            if details_data['status'] == 'OK':
+                                details = details_data['result']
+                                
+                                # Initialize metadata if not present
+                                if 'company_metadata' not in job:
+                                    job['company_metadata'] = {
+                                        'address': 'N/A',
+                                        'phone': 'N/A',
+                                        'website': 'N/A',
+                                        'maps_url': 'N/A'
+                                    }
+                                
+                                # Update metadata with Google data (only if present)
+                                if details.get('formatted_address'):
+                                    job['company_metadata']['address'] = details.get('formatted_address')
+                                
+                                if details.get('formatted_phone_number'):
+                                    job['company_metadata']['phone'] = details.get('formatted_phone_number')
+                                
+                                if details.get('website'):
+                                    job['company_metadata']['website'] = details.get('website')
+                                
+                                if details.get('url'):
+                                    job['company_metadata']['maps_url'] = details.get('url')
+                except Exception as e:
+                    print(f"Error getting company metadata: {str(e)}")
             
             # Add to filtered jobs
             filtered_jobs.append(job)
         
-        print(f"Total filtered jobs: {len(filtered_jobs)}")  # Debug log
+        print(f"Total filtered jobs: {len(filtered_jobs)}")
         
         return jsonify({
             'total': len(filtered_jobs),
@@ -197,4 +242,5 @@ def save_company():
     return jsonify({'success': True, 'message': 'Company saved'})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Flask doesn't support asyncio by default, so we need a special run method
+    app.run(debug=True, threaded=True)
