@@ -2,6 +2,10 @@ import os
 import aiohttp
 import json
 from datetime import datetime
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+import googleapiclient.discovery
+from google.oauth2 import service_account
 from .base_connector import BaseJobConnector
 
 class GoogleJobsConnector(BaseJobConnector):
@@ -47,12 +51,42 @@ class GoogleJobsConnector(BaseJobConnector):
         "OTHER": "other"
     }
     
-    def __init__(self, api_key=None, project_id=None):
-        super().__init__(api_key)
-        self.api_key = api_key or os.getenv('GOOGLE_JOBS_API_KEY')
-        self.project_id = project_id or os.getenv('GOOGLE_JOBS_PROJECT_ID')
-        # Google Cloud Talent Solution API endpoint
+    def __init__(self, client_id=None, client_secret=None, project_id=None):
+        super().__init__()
+        self.client_id = client_id or os.getenv('GOOGLE_CLIENT_ID')
+        self.client_secret = client_secret or os.getenv('GOOGLE_CLIENT_SECRET')
+        self.project_id = project_id or os.getenv('GOOGLE_PROJECT_ID')
+        self.name = "Google Jobs"
+        
+        # Create credentials for service
+        self.credentials = self._get_credentials()
+        
+        # Google Cloud Talent Solution API endpoint for HTTP requests
         self.base_url = f"https://jobs.googleapis.com/v4/projects/{self.project_id}/tenants/default/jobs:search"
+    
+    def _get_credentials(self):
+        """Create Google OAuth2 credentials object"""
+        try:
+            # If service account credentials exist, use them
+            if os.path.exists('service-account.json'):
+                return service_account.Credentials.from_service_account_file(
+                    'service-account.json',
+                    scopes=['https://www.googleapis.com/auth/jobs']
+                )
+            # Otherwise use client credentials
+            elif self.client_id and self.client_secret:
+                # For simplicity in this app, we're using a basic credential
+                # In a production app, you'd implement a proper OAuth flow with refresh tokens
+                return google.oauth2.credentials.Credentials(
+                    None,  # No access token needed for this basic approach
+                    client_id=self.client_id,
+                    client_secret=self.client_secret,
+                    token_uri=os.getenv('GOOGLE_TOKEN_URI')
+                )
+            return None
+        except Exception as e:
+            print(f"Error creating Google credentials: {str(e)}")
+            return None
     
     def get_categories(self):
         """Get available job categories for Google Jobs"""
@@ -66,8 +100,8 @@ class GoogleJobsConnector(BaseJobConnector):
         """Search for jobs on Google Jobs API"""
         print(f"[GoogleJobs] Searching for jobs in {location} within {radius}km")
         
-        if not self.api_key or not self.project_id:
-            print("[GoogleJobs] API key or project ID not configured")
+        if not self.credentials or not self.project_id:
+            print("[GoogleJobs] Credentials or project ID not configured")
             return []
             
         # Prepare request body for Google Jobs API
@@ -118,24 +152,45 @@ class GoogleJobsConnector(BaseJobConnector):
         print(f"[GoogleJobs] Request body: {json.dumps(request_body)}")
         
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.base_url}?key={self.api_key}",
-                    json=request_body,
-                    headers={"Content-Type": "application/json"}
-                ) as response:
-                    if response.status != 200:
-                        error_text = await response.text()
-                        print(f"[GoogleJobs] API error: {response.status}, {error_text}")
-                        return []
-                    
-                    data = await response.json()
-                    jobs = data.get('jobs', [])
-                    
-                    print(f"[GoogleJobs] Found {len(jobs)} jobs")
-                    
-                    # Convert to standard format
-                    return [self.standardize_job(job) for job in jobs]
+            # Build the service
+            talent_service = googleapiclient.discovery.build(
+                'jobs', 'v4', credentials=self.credentials)
+            
+            # Make the API request
+            search_jobs_request = {
+                'parent': f'projects/{self.project_id}/tenants/default',
+                'requestMetadata': {
+                    'userId': 'user-id',
+                    'sessionId': 'session-id',
+                    'domain': 'companyhunter.com'
+                },
+                'jobQuery': {
+                    'locationFilters': [
+                        {
+                            'address': location,
+                            'distanceInKm': radius
+                        }
+                    ],
+                    'query': request_body["jobQuery"].get("query", "")
+                },
+                'pageSize': 100
+            }
+            
+            # Add employment types if provided
+            if "employmentTypes" in request_body["jobQuery"]:
+                search_jobs_request["jobQuery"]["employmentTypes"] = request_body["jobQuery"]["employmentTypes"]
+                
+            response = talent_service.projects().tenants().jobs().search(
+                parent=f'projects/{self.project_id}/tenants/default',
+                body=search_jobs_request
+            ).execute()
+            
+            jobs = response.get('matchingJobs', [])
+            print(f"[GoogleJobs] Found {len(jobs)} jobs")
+            
+            # Convert to standard format
+            return [self.standardize_job(job.get('job', {})) for job in jobs]
+            
         except Exception as e:
             print(f"[GoogleJobs] Error searching jobs: {str(e)}")
             return []

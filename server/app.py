@@ -27,8 +27,11 @@ ADZUNA_APP_ID = os.getenv('ADZUNA_APP_ID')
 ADZUNA_API_KEY = os.getenv('ADZUNA_API_KEY')
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
 REED_API_KEY = os.getenv('REED_API_KEY')
-GOOGLE_JOBS_API_KEY = os.getenv('GOOGLE_JOBS_API_KEY')
-GOOGLE_JOBS_PROJECT_ID = os.getenv('GOOGLE_JOBS_PROJECT_ID')
+
+# Google OAuth credentials
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
+GOOGLE_PROJECT_ID = os.getenv('GOOGLE_PROJECT_ID')
 
 # Blacklist of companies to filter out
 COMPANY_BLACKLIST = []
@@ -49,12 +52,16 @@ if REED_API_KEY:
 else:
     print("Reed API key not found, skipping connector")
 
-# Google Jobs API requires API key and project ID
-if GOOGLE_JOBS_API_KEY and GOOGLE_JOBS_PROJECT_ID:
-    print("Adding Google Jobs connector")
-    job_aggregator.add_connector(GoogleJobsConnector(GOOGLE_JOBS_API_KEY, GOOGLE_JOBS_PROJECT_ID))
+# Google Jobs API requires OAuth credentials and project ID
+if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_PROJECT_ID:
+    print("Adding Google Jobs connector with OAuth")
+    job_aggregator.add_connector(GoogleJobsConnector(
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        project_id=GOOGLE_PROJECT_ID
+    ))
 else:
-    print("Google Jobs API key or project ID not found, skipping connector")
+    print("Google OAuth credentials or project ID not found, skipping connector")
 
 # GitHub Jobs doesn't need API keys
 print("Adding GitHub Jobs connector")
