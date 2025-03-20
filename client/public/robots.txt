@@ -1,3 +1,9 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+
+# Sitemap
+Sitemap: https://companyhunter.com/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 10

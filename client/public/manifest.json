@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "CompanyHunter",
+  "name": "CompanyHunter - Advanced Job Search Platform",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +20,9 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#4285F4",
+  "background_color": "#ffffff",
+  "description": "Find your dream job with our advanced job search platform. Search listings from multiple sources including Adzuna, Reed, and Indeed.",
+  "orientation": "portrait",
+  "categories": ["jobs", "business", "career"]
 }
