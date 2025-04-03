@@ -1,56 +1,31 @@
-#WIP. [ ] Needs optimisation/a total rewrite. Works though. Needs to be hooked into program.
+#WIP. [1/2] Needs optimisation/a total rewrite. Works though. Needs to be hooked into program.
 
 # Originally a console program that took in and output json files, since that'd be a bit of a pain to do largescale, just have it output an array of objects (companies), I've already defined the objects in here too
-# To add: blacklist, 
+# To add: blacklist,
+# [X] Ammended to now take in a list of (postcode, radius) and output a list of office objects (see line 62)
 
 import json
 import requests
 import os
 
-JSON_FILE_PATH = "companies.json"
 HEADERS = {
-    "User-Agent": "CompanySearch/1.0 (CompanyHunter1.0)"
+    "User-Agent": "CompanySearcher/1.1 (CompanyHunter1.0)"
 }
 
-def main():
-    while True:
-        choice = "1"
-
-        if choice == "1":
-            postcode = input("Enter postcode: ")
-            radius = int(input("Enter radius (meters): "))
-            process_area(postcode, radius)
-        elif choice == "2": #<--- multiple paths check
-            path = input("Enter path to areas JSON: ")
-            load_areas_from_json(path)
+def process_areas(area_list):
+    all_offices = []
+    for postcode, radius in area_list:
+        offices = process_area(postcode, radius)
+        all_offices.extend(offices)
+    return all_offices
 
 def process_area(postcode, radius):
     lat, lon = get_coordinates_from_postcode(postcode)
     if lat == 0 and lon == 0:
-        print("Invalid postcode. Please try again.")
-        return
+        print(f"Invalid postcode: {postcode}")
+        return []
     print(f"Searching for offices in {postcode} ({lat}, {lon}) within {radius} meters...")
-    
-    new_offices = get_offices(lat, lon, radius)
-    existing_offices = load_existing_offices()
-
-    for office in new_offices:
-        if not any(o['id'] == office['id'] for o in existing_offices):
-            existing_offices.append(office)
-
-    print("Offices added successfully.")
-    ##Set up to return array of offices here!
-
-def load_areas_from_json(path):
-    if not os.path.exists(path):
-        print("File not found.")
-        return
-    
-    with open(path, "r") as file:
-        areas = json.load(file)
-    
-    for area in areas:
-        process_area(area["Postcode"], area["Radius"])
+    return get_offices(lat, lon, radius)
 
 def get_coordinates_from_postcode(postcode):
     url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(postcode)}, UK&format=json"
@@ -104,11 +79,3 @@ def get_offices(lat, lon, radius):
         print(f"Unexpected Error: {e}")
     return []
 
-def load_existing_offices():
-    if os.path.exists(JSON_FILE_PATH):
-        with open(JSON_FILE_PATH, "r") as file:
-            return json.load(file)
-    return []
-
-if __name__ == "__main__":
-    main()
