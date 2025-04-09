@@ -16,9 +16,13 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Virtual Environment
 venv/
@@ -28,23 +32,36 @@ ENV/
 .venv
 env.bak/
 venv.bak/
+pythonenv*
+.python-version
+pyvenv.cfg
 
 # IDE - VSCode
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 *.code-workspace
+.history
+.ionide
 
 # IDE - PyCharm
 .idea/
 *.iml
 *.iws
 .idea_modules/
+out/
 
 # IDE - Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb
+.jupyter/
+jupyter_notebook_config.py
 
-# Testing
+# Testing and Coverage
 .coverage
+coverage/
 htmlcov/
 .tox/
 .nox/
@@ -57,21 +74,44 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+.benchmarks/
+prof/
 
-# Logs
+# Logs and Debugging
 *.log
 logs/
 log/
+debug/
+*.debug
+crash-reports/
+debug.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Local development settings
 .env
 .env.local
 .env.*.local
+instance/
+local_settings.py
+*.local.py
+config.local.py
 
 # Database
 *.db
 *.sqlite3
 *.sqlite
+*.sqlite-journal
+*.sql
+*.sql.gz
+*.dump
+*.rdb
+redis-data/
+mongodb/
+postgres-data/
 
 # OS generated files
 .DS_Store
@@ -81,6 +121,10 @@ log/
 .Trashes
 ehthumbs.db
 Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+Icon?
 
 # Distribution / packaging
 .Python
@@ -96,9 +140,27 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+*.spec
+*.manifest
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Documentation
+docs/_build/
+docs/generated/
+_docs/
+_build/
+/site
 
 # Unit test / coverage reports
 htmlcov/
@@ -110,17 +172,66 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+.pytest_cache/
+pytest.ini
+pytest.cfg
 
-# mypy
+# Static files and media
+/static/
+/media/
+/uploads/
+/public/
+*.pdf
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.mp3
+*.mp4
+*.avi
+*.mov
+*.wav
+*.flac
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.ico
+*.svg
+*.woff
+*.woff2
+*.ttf
+*.eot
+
+# Type checking
 .mypy_cache/
 .dmypy.json
 dmypy.json
+.pyre/
+.pytype/
 
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
-/site
+# Celery
+celerybeat-schedule
+celerybeat.pid
+*.pid
+
+# Environments and secrets
+.secrets/
+secrets/
+credentials/
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+*.csr
+*.der
+*.keystore
+*.jks
 
 # Temporary files
 *.swp
@@ -129,3 +240,53 @@ dmypy.json
 *.bak
 *.tmp
 *.temp
+.*.sw?
+*#
+.#*
+*.orig
+*.rej
+*.patch
+*.diff
+
+# Flask
+instance/
+.webassets-cache/
+flask_session/
+
+# FastAPI
+__pycache__
+.pytest_cache
+
+# Dependencies
+requirements.local.txt
+poetry.lock
+Pipfile.lock
+
+# Docker
+.docker/
+docker-compose.override.yml
+*.env.docker
+
+# Kubernetes
+.kube/
+kubeconfig
+*.kubeconfig
+
+# Serverless
+.serverless/
+serverless.env.yml
+
+# AWS
+.aws/
+*.aws.json
+.elasticbeanstalk/
+
+# Heroku
+*.pyc
+staticfiles
+.env
+.env.prod
+.env.staging
+venv
+*.sqlite3
+.DS_Store
