@@ -23,21 +23,34 @@ const buttonVariants = {
 };
 
 const SearchForm = ({ onSearch, center, radius, setRadius, isLoading }) => {
-  const [location, setLocation] = useState('');
-  const [searchRadius, setSearchRadius] = useState(radius);
+  const [locations, setLocations] = useState(['']);
+  const [radiusValue, setRadiusValue] = useState(radius);
   const [isFocused, setIsFocused] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleLocationChange = (index, value) => {
+    const newLocations = [...locations];
+    newLocations[index] = value;
+    setLocations(newLocations);
+  };
+
+  const addLocation = () => {
+    setLocations([...locations, '']);
+  };
+
+  const removeLocation = (index) => {
+    const newLocations = locations.filter((_, i) => i !== index);
+    setLocations(newLocations);
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
+    const validLocations = locations.filter(loc => loc.trim() !== '');
+    if (validLocations.length === 0) return;
     
-    try {
-      await onSearch({
-        location: location || `${center.lat},${center.lng}`,
-        radius: searchRadius
-      });
-    } catch (error) {
-      console.error('Error searching:', error);
-    }
+    onSearch({
+      locations: validLocations,
+      radius: radiusValue
+    });
   };
 
   return (
@@ -55,30 +68,48 @@ const SearchForm = ({ onSearch, center, radius, setRadius, isLoading }) => {
         Search Jobs
       </motion.h3>
       
-      <form onSubmit={handleSubmit}>
-        <motion.div 
-          className="form-group"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <label htmlFor="location">Location (or click on map):</label>
-          <motion.input
-            type="text"
-            id="location"
-            placeholder="City, Address, or Postal Code"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="form-control"
-            disabled={isLoading}
-            variants={inputVariants}
-            initial="blur"
-            whileFocus="focus"
-            animate={isFocused ? "focus" : "blur"}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-          />
-        </motion.div>
+      <motion.form 
+        onSubmit={handleSubmit}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
+        <div className="locations-container">
+          {locations.map((location, index) => (
+            <div key={index} className="location-input-group">
+              <motion.input
+                type="text"
+                value={location}
+                onChange={(e) => handleLocationChange(index, e.target.value)}
+                placeholder="Enter location (e.g., London, UK)"
+                className="location-input"
+                disabled={isLoading}
+                variants={inputVariants}
+                initial="blur"
+                whileFocus="focus"
+                animate={isFocused ? "focus" : "blur"}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+              />
+              {locations.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeLocation(index)}
+                  className="remove-location-btn"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addLocation}
+            className="add-location-btn"
+          >
+            + Add Another Location
+          </button>
+        </div>
         
         <motion.div 
           className="form-group"
@@ -86,16 +117,16 @@ const SearchForm = ({ onSearch, center, radius, setRadius, isLoading }) => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}
         >
-          <label htmlFor="radius">Search Radius: {searchRadius} km</label>
+          <label htmlFor="radius">Search Radius: {radiusValue} km</label>
           <motion.input
             type="range"
             id="radius"
             min="1"
             max="50"
-            value={searchRadius}
+            value={radiusValue}
             onChange={(e) => {
               const value = parseInt(e.target.value);
-              setSearchRadius(value);
+              setRadiusValue(value);
               setRadius(value);
             }}
             className="form-control"
@@ -107,7 +138,7 @@ const SearchForm = ({ onSearch, center, radius, setRadius, isLoading }) => {
         <motion.button 
           type="submit" 
           className="btn btn-primary" 
-          disabled={isLoading}
+          disabled={isLoading || locations.every(loc => loc.trim() === '')}
           variants={buttonVariants}
           whileHover="hover"
           whileTap="tap"
@@ -150,7 +181,7 @@ const SearchForm = ({ onSearch, center, radius, setRadius, isLoading }) => {
         >
           Use the filters below to narrow down your results
         </motion.p>
-      </form>
+      </motion.form>
     </motion.div>
   );
 };

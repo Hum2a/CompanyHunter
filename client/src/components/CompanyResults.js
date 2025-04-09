@@ -28,8 +28,84 @@ const cardVariants = {
   }
 };
 
-const CompanyResults = ({ results, onSaveCompany }) => {
+const CompanyResults = ({ results, onSaveCompany, searchAreas }) => {
+  const formatSalary = (min, max) => {
+    if (!min && !max) return 'Salary not specified';
+    if (!max) return `From £${min.toLocaleString()}`;
+    if (!min) return `Up to £${max.toLocaleString()}`;
+    return `£${min.toLocaleString()} - £${max.toLocaleString()}`;
+  };
+
+  const getCompanyName = (company) => {
+    if (!company) return 'Unknown Company';
+    if (typeof company === 'string') return company;
+    return company.display_name || 'Unknown Company';
+  };
+
+  const getLocationText = (location) => {
+    console.log('Getting location text for:', location);
+    if (!location) {
+      console.log('Location is null/undefined');
+      return 'Location not specified';
+    }
+    if (typeof location === 'string') {
+      console.log('Location is string:', location);
+      return location;
+    }
+    if (typeof location === 'object') {
+      console.log('Location is object:', location);
+      if (location.display_name) {
+        console.log('Using display_name:', location.display_name);
+        return location.display_name;
+      }
+      if (location.name) {
+        console.log('Using name:', location.name);
+        return location.name;
+      }
+      if (location.address) {
+        console.log('Using address:', location.address);
+        return location.address;
+      }
+      if (location.area && Array.isArray(location.area) && location.area.length > 0) {
+        console.log('Using area array:', location.area[0]);
+        return location.area[0];
+      }
+    }
+    console.log('No valid location format found, returning Unknown Location');
+    return 'Unknown Location';
+  };
+
+  const getLocationBadge = (searchLocation) => {
+    console.log('Getting location badge for:', searchLocation);
+    if (!searchLocation) {
+      console.log('No search location provided');
+      return null;
+    }
+    const locationText = getLocationText(searchLocation);
+    console.log('Location badge text:', locationText);
+    return (
+      <span className="location-badge">
+        {locationText}
+      </span>
+    );
+  };
+
+  const formatSearchAreas = (areas) => {
+    console.log('Formatting search areas:', areas);
+    if (!areas || !Array.isArray(areas)) {
+      console.log('Invalid areas format, returning default');
+      return '1 location';
+    }
+    const formattedAreas = areas.map(area => {
+      console.log('Processing area:', area);
+      return getLocationText(area);
+    });
+    console.log('Formatted areas:', formattedAreas);
+    return `${formattedAreas.length} location${formattedAreas.length > 1 ? 's' : ''}`;
+  };
+
   if (!results || results.length === 0) {
+    console.log('No results to display');
     return (
       <motion.div 
         className="empty-results"
@@ -42,121 +118,60 @@ const CompanyResults = ({ results, onSaveCompany }) => {
     );
   }
 
+  console.log('Rendering results:', results);
+  console.log('Search areas:', searchAreas);
+
   return (
-    <div className="company-results">
-      <motion.h2
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        Jobs Found ({results.length})
-      </motion.h2>
+    <div className="results-container">
+      <h2 className="results-title">
+        Found {results.length} jobs in {formatSearchAreas(searchAreas)}
+      </h2>
       
-      <motion.div 
-        className="results-list"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {results.map((job, index) => {
-          const company = job.company || {};
-          const companyName = company.display_name || 'N/A';
-          const metadata = job.company_metadata || {};
-          const sourceApi = job.source_api || 'Unknown';
-          
-          return (
-            <motion.div 
-              key={job.id || index} 
-              className="company-card"
-              variants={cardVariants}
-              whileHover="hover"
-              layoutId={`job-${index}`}
-            >
-              <div className="card-header">
-                <h3>{companyName}</h3>
-                <motion.span 
-                  className="source-api"
-                  whileHover={{ scale: 1.1 }}
-                >
-                  {sourceApi}
-                </motion.span>
+      <div className="results-grid">
+        {results.map((job, index) => (
+          <motion.div
+            key={index}
+            className="job-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.1 }}
+          >
+            <div className="job-header">
+              <h3 className="job-title">{job.title || 'Untitled Position'}</h3>
+              <div className="job-meta">
+                <span className="company-name">{getCompanyName(job.company)}</span>
+                <span className="job-type">{job.job_type || 'Full-time'}</span>
+                {job.searchLocation && getLocationBadge(job.searchLocation)}
               </div>
-              
-              <motion.div 
-                className="job-title"
-                initial={{ x: -20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
+            </div>
+            
+            <div className="job-details">
+              <p className="job-description">{job.description || 'No description available'}</p>
+              <div className="job-info">
+                <span className="salary">{formatSalary(job.salary_min, job.salary_max)}</span>
+                <span className="location">{getLocationText(job.location)}</span>
+              </div>
+            </div>
+            
+            <div className="job-actions">
+              <a
+                href={job.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="apply-button"
               >
-                {job.title || 'N/A'}
-              </motion.div>
-              
-              <div className="company-details">
-                <p><strong>Distance:</strong> {job.distance ? `${job.distance.toFixed(2)} km` : 'N/A'}</p>
-                
-                {metadata.address && metadata.address !== 'N/A' ? (
-                  <p><strong>Address:</strong> {metadata.address}</p>
-                ) : null}
-                
-                {metadata.phone && metadata.phone !== 'N/A' ? (
-                  <p><strong>Phone:</strong> {metadata.phone}</p>
-                ) : null}
-                
-                {metadata.website && metadata.website !== 'N/A' ? (
-                  <p><strong>Website:</strong> <a href={metadata.website} target="_blank" rel="noopener noreferrer">{metadata.website}</a></p>
-                ) : job.redirect_url ? (
-                  <p><strong>Job Listing:</strong> <a href={job.redirect_url} target="_blank" rel="noopener noreferrer">View Job Posting</a></p>
-                ) : null}
-                
-                {metadata.maps_url && metadata.maps_url !== 'N/A' ? (
-                  <p><strong>Maps:</strong> <a href={metadata.maps_url} target="_blank" rel="noopener noreferrer">View on Google Maps</a></p>
-                ) : null}
-                
-                {/* Show original job location if available */}
-                {job.location && job.location.area && Array.isArray(job.location.area) && job.location.area.length > 0 ? (
-                  <p><strong>Location:</strong> {job.location.area.join(', ')}</p>
-                ) : null}
-                
-                {/* Display salary information if available */}
-                {(job.salary_min || job.salary_max) ? (
-                  <p>
-                    <strong>Salary:</strong> {' '}
-                    {job.salary_min ? `${job.currency || '£'}${job.salary_min.toLocaleString()}` : ''}
-                    {job.salary_min && job.salary_max ? ' - ' : ''}
-                    {job.salary_max ? `${job.currency || '£'}${job.salary_max.toLocaleString()}` : ''}
-                  </p>
-                ) : null}
-                
-                {/* Show contract type if available */}
-                {job.contract_type ? (
-                  <p><strong>Type:</strong> {job.contract_type}</p>
-                ) : null}
-                
-                {/* Show category if available */}
-                {job.category && job.category.label ? (
-                  <p><strong>Category:</strong> {job.category.label}</p>
-                ) : null}
-              </div>
-              
-              {job.description ? (
-                <div className="job-description">
-                  <h4>Description</h4>
-                  <div dangerouslySetInnerHTML={{ __html: job.description }} />
-                </div>
-              ) : null}
-              
-              <motion.button
-                className="btn btn-success"
+                Apply Now
+              </a>
+              <button
                 onClick={() => onSaveCompany(job)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                className="save-button"
               >
                 Save Job
-              </motion.button>
-            </motion.div>
-          );
-        })}
-      </motion.div>
+              </button>
+            </div>
+          </motion.div>
+        ))}
+      </div>
     </div>
   );
 };
