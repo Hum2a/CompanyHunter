@@ -240,6 +240,12 @@ def get_jobs():
                 except Exception as e:
                     print(f"Error getting company metadata: {str(e)}")
             
+            # Add coordinates in the format expected by the frontend
+            job['coordinates'] = {
+                'latitude': job_lat,
+                'longitude': job_lng
+            }
+            
             # Add to filtered jobs
             filtered_jobs.append(job)
         

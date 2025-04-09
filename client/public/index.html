@@ -3,40 +3,63 @@
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#4285F4" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="theme-color" content="#4285F4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a73e8" media="(prefers-color-scheme: dark)" />
     <meta
       name="description"
-      content="CompanyHunter - Find your dream job with our advanced job search platform. Search listings from multiple sources including Adzuna, Reed, and Indeed."
+      content="CompanyHunter - Your AI-powered job search platform. Find and compare jobs from Adzuna, Reed, Indeed, and more. Advanced filtering, real-time mapping, and smart job matching to help you land your dream job."
     />
-    <meta name="keywords" content="job search, career, employment, job listings, Adzuna, Reed, Indeed, job finder, job board, job hunting" />
-    <meta name="author" content="CompanyHunter Team" />
-    <meta name="robots" content="index, follow" />
+    <meta name="keywords" content="job search, career finder, employment opportunities, job listings, Adzuna jobs, Reed jobs, Indeed jobs, job finder, job board, job hunting, remote jobs, tech jobs, UK jobs, salary comparison, job map, company research" />
+    <meta name="author" content="CompanyHunter" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CompanyHunter" />
+    <meta name="application-name" content="CompanyHunter" />
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
+    <meta http-equiv="Permissions-Policy" content="geolocation=(self), camera=(), microphone=()" />
     
     <!-- Open Graph / Facebook Meta Tags -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://companyhunter.com/" />
-    <meta property="og:title" content="CompanyHunter - Advanced Job Search Platform" />
-    <meta property="og:description" content="Find your dream job with our multi-API job search platform. Aggregates listings from Adzuna, Reed, Indeed and more." />
+    <meta property="og:site_name" content="CompanyHunter" />
+    <meta property="og:title" content="CompanyHunter - AI-Powered Job Search Platform" />
+    <meta property="og:description" content="Find your perfect job with our intelligent job search platform. Compare salaries, map job locations, and discover opportunities from multiple trusted sources including Adzuna, Reed, and Indeed." />
     <meta property="og:image" content="%PUBLIC_URL%/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_GB" />
     
     <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@CompanyHunter" />
+    <meta name="twitter:creator" content="@CompanyHunter" />
     <meta name="twitter:url" content="https://companyhunter.com/" />
-    <meta name="twitter:title" content="CompanyHunter - Advanced Job Search Platform" />
-    <meta name="twitter:description" content="Find your dream job with our multi-API job search platform. Aggregates listings from Adzuna, Reed, Indeed and more." />
+    <meta name="twitter:title" content="CompanyHunter - AI-Powered Job Search Platform" />
+    <meta name="twitter:description" content="Find your perfect job with our intelligent job search platform. Compare salaries, map job locations, and discover opportunities from multiple trusted sources." />
     <meta name="twitter:image" content="%PUBLIC_URL%/og-image.jpg" />
     
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!-- PWA Assets -->
+    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
+    <link rel="mask-icon" href="%PUBLIC_URL%/safari-pinned-tab.svg" color="#4285F4" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     
-    <!-- Preconnect to API domain for better performance -->
-    <link rel="preconnect" href="http://localhost:5000">
+    <!-- Performance Optimizations -->
+    <link rel="preconnect" href="http://localhost:5000" crossorigin />
+    <link rel="dns-prefetch" href="http://localhost:5000" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://maps.googleapis.com" crossorigin />
     
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Fonts with display swap -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     
     <!-- Structured Data (JSON-LD) for SEO -->
     <script type="application/ld+json">
@@ -45,21 +68,57 @@
         "@type": "WebApplication",
         "name": "CompanyHunter",
         "url": "https://companyhunter.com",
-        "description": "An advanced job search platform aggregating listings from multiple sources",
+        "description": "AI-powered job search platform aggregating listings from multiple trusted sources",
         "applicationCategory": "Job Search",
         "operatingSystem": "Web",
+        "browserRequirements": "Requires JavaScript",
+        "softwareVersion": "1.0.0",
         "offers": {
           "@type": "Offer",
           "price": "0",
-          "priceCurrency": "USD"
+          "priceCurrency": "GBP"
+        },
+        "featureList": [
+          "Multi-source job search",
+          "Interactive job mapping",
+          "Salary comparison",
+          "Advanced filtering",
+          "Company research"
+        ],
+        "author": {
+          "@type": "Organization",
+          "name": "CompanyHunter",
+          "url": "https://companyhunter.com"
         }
       }
     </script>
+
+    <!-- Organization Schema -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "CompanyHunter",
+        "url": "https://companyhunter.com",
+        "logo": "https://companyhunter.com/logo512.png",
+        "sameAs": [
+          "https://twitter.com/CompanyHunter",
+          "https://www.linkedin.com/company/companyhunter",
+          "https://github.com/companyhunter"
+        ]
+      }
+    </script>
     
-    <title>CompanyHunter - Find Your Dream Job | Advanced Job Search Platform</title>
+    <title>CompanyHunter - AI-Powered Job Search | Find Your Dream Job</title>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app. CompanyHunter is an interactive job search platform that requires JavaScript to function properly.</noscript>
+    <noscript>
+      <div style="padding: 20px; text-align: center; font-family: system-ui, -apple-system, sans-serif;">
+        <h1>JavaScript Required</h1>
+        <p>CompanyHunter requires JavaScript to provide you with an interactive job search experience. Please enable JavaScript in your browser settings to continue.</p>
+        <p>If you cannot enable JavaScript, try using a modern browser like Chrome, Firefox, or Edge.</p>
+      </div>
+    </noscript>
     <div id="root"></div>
     <!--
       This HTML file is a template.

@@ -1,21 +1,40 @@
-[ ] Find jobs
-	[ ] Find in area
-		[ ] Find in multiple areas
-		[ ] Hook into larger system
-	[ ] Search jobsites
-		[ ] blacklist for results
-		[ ] AUTOFILL
-	[ ] Search physical office spaces (openstreetmaps)
-		[ ] install blacklist <-- don't want to apply to government embassies
-		[ ] Find contact info from internet if not avaliable on openstreetmaps
-			[ ] Hook in webcrawler to scour company website
-			[ ] find email (if not located already, or if you need a recruitment email) <-- ai or just logic? search for lines including a "@"?
-				[ ] Email applicatin with title, info and attach C.V.
-					[ ] AI to cater application to company?
+# CompanyHunter Project TODO List
 
+## Job Search Features
 
---- Autofill Project ---
-Fill out forums tend to use this trend, "thing" followed by [box to input field]
+- [x] Find jobs in specific areas
+  - [x] Support multiple area search
+  - [x] Integrate with larger job search system
+- [ ] Job site integration
+  - [ ] Implement blacklist for results
+  - [x] Add autofill functionality
+- [ ] Office space search (OpenStreetMaps)
+  - [ ] Implement company blacklist (excluding government embassies)
+  - [ ] Find contact information
+    - [ ] Web crawler for company websites
+    - [ ] Email discovery
+      - [ ] Pattern matching for email addresses
+      - [ ] Recruitment email identification
+      - [ ] Automated application submission
+        - [ ] AI-powered application customization
 
-1. Have user input their cv on our own forum.
-2. Use that forum as the basis of our autofill, use flexible dictionary listings to train up model i.e. one website may word it one way, another might ask for the same thing but call it something else.
+## Autofill Project
+
+### Overview
+
+The autofill system will help users automatically fill out job application forms by learning from common form patterns and user input.
+
+### Implementation Steps
+
+1. Create user CV input form
+2. Develop flexible dictionary system
+   - Map different terminology across job sites
+   - Train model to recognize equivalent fields
+   - Handle variations in form structure
+
+### Technical Requirements
+
+- Pattern recognition for form fields
+- Flexible mapping system
+- User data storage and management
+- Cross-platform compatibility

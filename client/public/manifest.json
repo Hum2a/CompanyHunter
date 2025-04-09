@@ -1,6 +1,7 @@
 {
   "short_name": "CompanyHunter",
-  "name": "CompanyHunter - Advanced Job Search Platform",
+  "name": "CompanyHunter - AI-Powered Job Search",
+  "description": "Find your perfect job with our intelligent job search platform. Compare salaries, map job locations, and discover opportunities from multiple trusted sources.",
   "icons": [
     {
       "src": "favicon.ico",
@@ -8,21 +9,84 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "192x192"
+      "src": "favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
     },
     {
-      "src": "logo512.png",
+      "src": "favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "android-chrome-192x192.png",
+      "sizes": "192x192",
       "type": "image/png",
-      "sizes": "512x512"
+      "purpose": "any maskable"
+    },
+    {
+      "src": "android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "apple touch icon"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "theme_color": "#4285F4",
   "background_color": "#ffffff",
-  "description": "Find your dream job with our advanced job search platform. Search listings from multiple sources including Adzuna, Reed, and Indeed.",
-  "orientation": "portrait",
-  "categories": ["jobs", "business", "career"]
+  "categories": [
+    "business",
+    "productivity",
+    "utilities",
+    "career"
+  ],
+  "screenshots": [
+    {
+      "src": "screenshot1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "description": "Job search with interactive map"
+    },
+    {
+      "src": "screenshot2.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "description": "Advanced filtering options"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Search Jobs",
+      "url": "/search",
+      "description": "Start a new job search"
+    },
+    {
+      "name": "Recent Searches",
+      "url": "/recent",
+      "description": "View your recent job searches"
+    }
+  ],
+  "dir": "ltr",
+  "lang": "en-GB",
+  "iarc_rating_id": "",
+  "share_target": {
+    "action": "/share-target",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }
