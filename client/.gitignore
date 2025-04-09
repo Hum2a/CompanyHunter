@@ -238,4 +238,12 @@ jest.config.local.js
 *.swp
 *.swo
 
+
 *.json
+*.lock
+*.lockb
+*.lockb.json
+*.lockb.json.lock
+*.lockb.json.lockb
+*.lockb.json.lockb.json
+*.lockb.json.lockb.json.lock
