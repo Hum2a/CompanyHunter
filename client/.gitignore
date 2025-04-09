@@ -237,3 +237,5 @@ jest.config.local.js
 *~
 *.swp
 *.swo
+
+*.json
