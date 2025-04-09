@@ -7,7 +7,7 @@
   - [x] Integrate with larger job search system
 - [ ] Job site integration
   - [ ] Implement blacklist for results
-  - [ ] Add autofill functionality
+  - [x] Add autofill functionality
 - [ ] Office space search (OpenStreetMaps)
   - [ ] Implement company blacklist (excluding government embassies)
   - [ ] Find contact information

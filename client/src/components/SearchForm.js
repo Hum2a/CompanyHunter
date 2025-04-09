@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { filterLocations } from '../data/ukLocations';
+import "../styles/SearchForm.css";
 
 const inputVariants = {
   focus: { 
@@ -26,11 +28,62 @@ const SearchForm = ({ onSearch, center, radius, setRadius, isLoading }) => {
   const [locations, setLocations] = useState(['']);
   const [radiusValue, setRadiusValue] = useState(radius);
   const [isFocused, setIsFocused] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeInputIndex, setActiveInputIndex] = useState(-1);
 
   const handleLocationChange = (index, value) => {
     const newLocations = [...locations];
     newLocations[index] = value;
     setLocations(newLocations);
+
+    // Update suggestions
+    if (value.trim()) {
+      const filtered = filterLocations(value);
+      setSuggestions(filtered);
+      setShowSuggestions(true);
+      setActiveSuggestionIndex(-1);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleKeyDown = (e, index) => {
+    if (!showSuggestions) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setActiveSuggestionIndex(prev => 
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setActiveSuggestionIndex(prev => 
+          prev > 0 ? prev - 1 : -1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (activeSuggestionIndex >= 0) {
+          handleLocationChange(index, suggestions[activeSuggestionIndex]);
+          setShowSuggestions(false);
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleSuggestionClick = (index, suggestion) => {
+    handleLocationChange(index, suggestion);
+    setShowSuggestions(false);
   };
 
   const addLocation = () => {
@@ -52,6 +105,18 @@ const SearchForm = ({ onSearch, center, radius, setRadius, isLoading }) => {
       radius: radiusValue
     });
   };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.location-input-group')) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   return (
     <motion.div 
@@ -77,20 +142,41 @@ const SearchForm = ({ onSearch, center, radius, setRadius, isLoading }) => {
         <div className="locations-container">
           {locations.map((location, index) => (
             <div key={index} className="location-input-group">
-              <motion.input
-                type="text"
-                value={location}
-                onChange={(e) => handleLocationChange(index, e.target.value)}
-                placeholder="Enter location (e.g., London, UK)"
-                className="location-input"
-                disabled={isLoading}
-                variants={inputVariants}
-                initial="blur"
-                whileFocus="focus"
-                animate={isFocused ? "focus" : "blur"}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-              />
+              <div className="location-input-wrapper">
+                <motion.input
+                  type="text"
+                  value={location}
+                  onChange={(e) => handleLocationChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, index)}
+                  onFocus={() => {
+                    setActiveInputIndex(index);
+                    setIsFocused(true);
+                    if (location.trim()) {
+                      setShowSuggestions(true);
+                    }
+                  }}
+                  placeholder="Enter location (e.g., London)"
+                  className="location-input"
+                  disabled={isLoading}
+                  variants={inputVariants}
+                  initial="blur"
+                  whileFocus="focus"
+                  animate={isFocused ? "focus" : "blur"}
+                />
+                {showSuggestions && activeInputIndex === index && suggestions.length > 0 && (
+                  <div className="suggestions-dropdown">
+                    {suggestions.map((suggestion, i) => (
+                      <div
+                        key={i}
+                        className={`suggestion-item ${i === activeSuggestionIndex ? 'active' : ''}`}
+                        onClick={() => handleSuggestionClick(index, suggestion)}
+                      >
+                        {suggestion}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               {locations.length > 1 && (
                 <button
                   type="button"
