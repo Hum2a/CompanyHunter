@@ -2,9 +2,9 @@
 
 ## Job Search Features
 
-- [ ] Find jobs in specific areas
-  - [ ] Support multiple area search
-  - [ ] Integrate with larger job search system
+- [x] Find jobs in specific areas
+  - [x] Support multiple area search
+  - [x] Integrate with larger job search system
 - [ ] Job site integration
   - [ ] Implement blacklist for results
   - [ ] Add autofill functionality
