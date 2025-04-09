@@ -22,29 +22,50 @@ const FilterOptions = ({ onFilterChange, apiUrl, currentFilters }) => {
     const fetchFilters = async () => {
       try {
         setLoading(true);
+        console.log('Fetching filters from:', apiUrl);
         
         // Fetch categories
         const categoriesResponse = await fetch(`${apiUrl}/api/categories`);
+        console.log('Categories response:', categoriesResponse.status);
+        
         if (!categoriesResponse.ok) {
-          throw new Error('Failed to fetch categories');
+          throw new Error(`Failed to fetch categories: ${categoriesResponse.status}`);
         }
         const categoriesData = await categoriesResponse.json();
+        console.log('Categories data:', categoriesData);
         
         // Fetch job types
         const jobTypesResponse = await fetch(`${apiUrl}/api/job_types`);
+        console.log('Job types response:', jobTypesResponse.status);
+        
         if (!jobTypesResponse.ok) {
-          throw new Error('Failed to fetch job types');
+          throw new Error(`Failed to fetch job types: ${jobTypesResponse.status}`);
         }
         const jobTypesData = await jobTypesResponse.json();
+        console.log('Job types data:', jobTypesData);
         
         // Update state with fetched data
-        setCategories(categoriesData || []);
-        setJobTypes(jobTypesData || []);
+        // Handle both array and object responses for categories
+        const categoryList = Array.isArray(categoriesData) ? categoriesData : 
+                           categoriesData?.categories || [];
+        
+        // Handle both array and object responses for job types
+        // Also normalize job type format to lowercase for consistency
+        const jobTypeList = (Array.isArray(jobTypesData) ? jobTypesData : 
+                           jobTypesData?.job_types || [])
+                           .map(type => type.toLowerCase())
+                           // Remove duplicates that might exist in different cases
+                           .filter((type, index, self) => 
+                             self.indexOf(type) === index
+                           );
+        
+        setCategories(categoryList);
+        setJobTypes(jobTypeList);
         setError(null);
       } catch (err) {
         console.error('Error fetching filters:', err);
         setError('Could not load filter options');
-        // Set some defaults in case the API fails
+        // Set default filters when API fails
         setCategories([
           "IT Jobs", 
           "Engineering Jobs", 
@@ -56,14 +77,21 @@ const FilterOptions = ({ onFilterChange, apiUrl, currentFilters }) => {
           "full_time",
           "part_time",
           "contract",
-          "permanent"
+          "permanent",
+          "remote"
         ]);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchFilters();
+    if (apiUrl) {
+      fetchFilters();
+    } else {
+      console.error('API URL is not defined');
+      setError('API configuration error');
+      setLoading(false);
+    }
   }, [apiUrl]);
   
   // Handle category selection
