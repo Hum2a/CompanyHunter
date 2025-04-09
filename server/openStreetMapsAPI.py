@@ -1,7 +1,9 @@
 #WIP. [1/2] Needs optimisation/a total rewrite. Works though. Needs to be hooked into program.
 
 # Originally a console program that took in and output json files, since that'd be a bit of a pain to do largescale, just have it output an array of objects (companies), I've already defined the objects in here too
-# To add: blacklist,
+# To add:
+# [ ] blacklist
+# [ ] get long/lat or postcode from node ID (if cna't find address or email, need to contact google company API and retrieve from there)
 # [X] Ammended to now take in a list of (postcode, radius) and output a list of office objects (see line 62)
 
 import json
